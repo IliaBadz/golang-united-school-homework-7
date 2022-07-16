@@ -30,6 +30,9 @@ func TestPeopleLen(t *testing.T) {
 	}{
 		{people: People{}, wantRes: 0},
 		{people: People{Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)}}, wantRes: 1},
+		{people: People{
+			Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)}, 
+			Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)}}, wantRes: 2,},
 	}
 
 	for _, tt := range tests {
@@ -76,6 +79,20 @@ func TestPeopleLess(t *testing.T) {
 				Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},
 				Person{firstName: "Homelander", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},},
 			wantRes: true,
+		},
+		{
+			name: "Different surnames, does not need sorting",
+			people: People{
+				Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},
+				Person{firstName: "Billy", lastName: "Cutcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},},
+			wantRes: true,
+		},
+		{
+			name: "Different surnames, needs sorting",
+			people: People{
+				Person{firstName: "Billy", lastName: "Cutcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},
+				Person{firstName: "Billy", lastName: "Butcher", birthDay: time.Date(1980, time.April, 11, 21, 32, 01, 0, time.Local)},},
+			wantRes: false,
 		},
 	}
 
@@ -149,6 +166,7 @@ func TestNewMatrix(t *testing.T) {
 		{name: "One row, two columns", val: "1 2", wantedRes: &Matrix{rows: 1, cols: 2, data: []int{1, 2}}, err: nil},
 		{name: "Different row length", val: "1 2\n 3", wantedRes: nil, err: errors.New("Rows need to be the same length")},
 		{name: "Two rows, three columns", val: "1 2 3\n 4 5 6", wantedRes: &Matrix{rows: 2, cols: 3, data: []int{1, 2, 3, 4, 5, 6}}, err: nil},
+		{name: "Invalid syntax", val: "1 D", wantedRes: nil, err: errors.New("strconv.Atoi: parsing \"D\": invalid syntax")},
 	}
 
 	for _, tt := range tests {
@@ -221,20 +239,29 @@ func TestMatrixSet(t *testing.T) {
 		col 	int
 		val 	int
 		wantedRes bool
+		resultMatrix *Matrix
 	}{
-		{name: "Negative row", row: -1, col: 0, val: 11, wantedRes: false},
-		{name: "Negative column", row: 1, col: -1, val: 12, wantedRes: false},
-		{name: "Unexisted row", row: 2, col: 0, val: 13, wantedRes: false},
-		{name: "Unexisted column", row: 1, col: 2, val: 14, wantedRes: false},
-		{name: "Successful", row: 0, col: 1, val: 15, wantedRes: true},
+		{name: "Negative row", row: -1, col: 0, val: 11, wantedRes: false, resultMatrix: &Matrix{rows: 2, cols: 2, data: []int{1, 2, 3, 4}}},
+		{name: "Negative column", row: 1, col: -1, val: 12, wantedRes: false, resultMatrix: &Matrix{rows: 2, cols: 2, data: []int{1, 2, 3, 4}}},
+		{name: "Unexisted row", row: 2, col: 0, val: 13, wantedRes: false, resultMatrix: &Matrix{rows: 2, cols: 2, data: []int{1, 2, 3, 4}}},
+		{name: "Unexisted column", row: 1, col: 2, val: 14, wantedRes: false, resultMatrix: &Matrix{rows: 2, cols: 2, data: []int{1, 2, 3, 4}}},
+		{name: "Successful", row: 0, col: 1, val: 15, wantedRes: true, resultMatrix: &Matrix{rows: 2, cols: 2, data: []int{1, 15, 3, 4}}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T){
 			res := matrix.Set(tt.row, tt.col, tt.val)
+			
 			if res != tt.wantedRes {
 				t.Errorf("Expected result to be %t, but got %t", tt.wantedRes, res)
+				return
 			}
+			
+			if reflect.DeepEqual(tt.resultMatrix, tt.resultMatrix) == false {
+				t.Errorf("Expected result to be %+v, but got %+v", tt.resultMatrix, matrix)
+			}
+
+
 		})
 	}
 
